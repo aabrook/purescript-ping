@@ -5,11 +5,13 @@ import Prelude
 import Effect.Console (log)
 import Effect
 
+import Control.Monad.Cont (ContT(..), runContT)
+
 import Data.Array ((!!), last, take)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (Pattern(..), split)
 
-import Node.ChildProcess (ExecResult(..), defaultExecOptions, exec, stdout)
+import Node.ChildProcess (ExecOptions, ExecResult(..), defaultExecOptions, exec, stdout)
 import Node.Stream (onData)
 
 newtype PingReply = PingReply
@@ -20,19 +22,22 @@ newtype PingReply = PingReply
 instance showPing :: Show PingReply where
   show (PingReply { ttl, time }) = "Time: " <> time <> " TTL: " <> ttl
 
-ping host = do
-  exec ("ping " <> host <> " -c 1") defaultExecOptions printResult
+resultToReply :: ExecResult -> Maybe PingReply
+resultToReply { stdout } = do
+  row <- pure $ split (Pattern "\\n") $ show stdout
+  reply <- row !! 1
+  res <- last $ split (Pattern ": ") reply
+  response <- pure $ take 4 $ split (Pattern " ") res
+  case response of
+    [_cmp, ttl, time, ms] -> Just (PingReply {ttl, time: time <> ms})
+    _ -> Nothing
 
-printResult :: ExecResult -> Effect Unit
-printResult { stdout } = log results
-  where
-    row = split (Pattern "\\n") $ show stdout
-    buildReply rep = case take 4 rep of
-                          [_cmp, ttl, time, ms] -> Just (PingReply {ttl, time: time <> ms})
-                          _ -> Nothing
-    results = do
-       reply <- row !! 1
-       res <- split (Pattern ": ") reply # last
-       split (Pattern " ") res # buildReply
-       # maybe "Failed to parse" show
+contPing :: String -> ContT Unit Effect (Maybe PingReply)
+contPing host = ContT (\f -> do
+  _ <- exec ("ping " <> host <> " -c 1") defaultExecOptions (f <<< resultToReply)
+  pure unit
+  )
 
+ping :: String -> (Maybe PingReply -> Effect Unit) -> Effect Unit
+ping host f = do
+  runContT (contPing host) f
