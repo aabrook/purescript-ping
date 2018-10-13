@@ -1,0 +1,22 @@
+{
+  "name": "ps-starter",
+  "version": "0.0.0",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "purescript-console": "^4.1.0",
+    "purescript-debug": "^4.0.0",
+    "purescript-prelude": "^4.0.1",
+    "purescript-effect": "^2.0.0",
+    "purescript-node-child-process": "^5.0.0",
+    "purescript-node-streams": "^4.0.0"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^4.0.0"
+  }
+}

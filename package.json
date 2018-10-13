@@ -1,0 +1,17 @@
+{
+  "name": "purescript-nix-bootstrap",
+  "dependencies": {
+    "bower": "1.8.2",
+    "pulp": "12.3.0",
+    "purescript": "0.12.0"
+  },
+  "scripts": {
+    "start": "node output/app.js",
+    "clean": "rm -rf output .pulp-cache",
+    "build": "npm run clean && pulp build --main Main --build-path output --to output/app.js",
+    "build:watch": "npm run clean && pulp --watch build --main Main --build-path output --to output/app.js",
+    "test": "pulp test",
+    "watch:test": "pulp --watch test",
+    "repl": "pulp repl"
+  }
+}
