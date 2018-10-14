@@ -3,17 +3,19 @@ module Main where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 
 import Affjax as AX
 import Affjax.RequestBody (string)
 import Affjax.ResponseFormat (ignore)
-import Effect.Aff (launchAff, launchAff_)
+import Effect.Aff (launchAff, launchAff_, makeAff)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), maybe)
 
 import Ping (PingReply(..), contPing, ping, resultToReply)
 import Control.Monad.Cont (ContT(..), runContT)
+import Mqtt
 
 forward :: Maybe PingReply -> Effect Unit
 forward (Just reply) = do
@@ -32,16 +34,17 @@ postMessage msg = launchAff $ do
        Left err -> log $ AX.printResponseFormatError err
        Right resp -> log $ show res.status
 
-contPost :: String -> ContT Unit Effect String
-contPost msg = ContT (\f -> launchAff_ $ do
-  res <- AX.post ignore "http://requestbin.fullcontact.com/12ks0jl1" (string msg)
-  case res.body of
-       Left err -> pure $ f $ AX.printResponseFormatError err
-       Right resp -> pure $ f $ show res.status
-  )
+publishPing host opts ping = launchAff_ $ do
+  cli <- connect host opts
+  _ <- publish "ping" ping cli
+  _ <- log "Ping Published"
+  end cli
 
-doTheThing :: String -> ContT Unit Effect String
-doTheThing h = do
-  r <- contPing h
-  m <- pure $ maybe "Failed" show r
-  contPost m
+doThePing host opts pingTarget =
+  let
+      publishIt v = case v of
+                         Just p -> publishPing host opts $ show p
+                         Nothing -> pure unit
+  in
+    ping pingTarget publishIt
+

@@ -20,7 +20,7 @@ newtype PingReply = PingReply
   }
 
 instance showPing :: Show PingReply where
-  show (PingReply { ttl, time }) = "Time: " <> time <> " TTL: " <> ttl
+  show (PingReply { ttl, time }) = "{\"time\": " <> time <> "\",\"ttl\": \"" <> ttl <> "\"}"
 
 resultToReply :: ExecResult -> Maybe PingReply
 resultToReply { stdout } = do
