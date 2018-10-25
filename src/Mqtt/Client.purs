@@ -13,13 +13,14 @@ import Data.Either (Either)
 foreign import data Client :: Type
 
 type Options =
-  { port     :: Int
+  { port     :: String
+  , host     :: String
   , clientId :: String
   , username :: String
   , password :: String
   }
 
-foreign import _connect :: String -> Options -> EffectFnAff Client
+foreign import _connect :: forall a. String -> a -> EffectFnAff Client
 
 foreign import _end :: Client -> EffectFnAff Unit
 
@@ -33,7 +34,7 @@ foreign import _onMessage :: (String -> String -> Effect Unit) -> Client -> Effe
 
 foreign import _onClose :: (Unit -> EffectFnAff Unit) -> EffectFnAff Unit
 
-connect :: String -> Options -> Aff Client
+connect :: forall a. String -> a -> Aff Client
 connect h opts = (fromEffectFnAff $ _connect h opts)
 
 end :: Client -> Aff Unit

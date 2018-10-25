@@ -13,8 +13,15 @@ import Data.Maybe (Maybe(..), maybe)
 
 import Mqtt
 
-eg = launchAff_ $ do
-  cli <- connect host opts
-  _ <- publish "test" "Why hello there" cli
-  end cli
-
+eg opts = launchAff_ $ do
+    cli <- connect host options
+    _ <- publish "test" "Why hello there" cli
+    end cli
+  where
+    host = opts.host
+    options = {
+      username: opts.username
+      , password: opts.password
+      , port: opts.port
+      , clientId: opts.clientId
+      }

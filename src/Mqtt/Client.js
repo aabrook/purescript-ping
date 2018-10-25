@@ -1,5 +1,3 @@
-const mqtt = require('mqtt')
-
 /*
 function cancelNoop(client) {
   return function(_cancelError, cancelerError, cancelerSuccess) {
@@ -25,7 +23,8 @@ function cancelNoop(_cancelError, cancelerError, cancelerSuccess) {
 exports._connect = function(url) {
   return function(opts) {
     return function(onError, onSuccess) {
-      const client = mqtt.connect(url, opts)
+      const client = require('mqtt').connect(url, opts)
+
       client.on('connect', function() {
         onSuccess(client)
       })
