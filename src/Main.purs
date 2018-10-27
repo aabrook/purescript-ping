@@ -9,7 +9,7 @@ import Effect.Class.Console (log)
 import Affjax as AX
 import Affjax.RequestBody (string)
 import Affjax.ResponseFormat (ignore)
-import Effect.Aff (launchAff, launchAff_, makeAff)
+import Effect.Aff (launchAff, launchAff_, runAff_, makeAff)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..), maybe)
 

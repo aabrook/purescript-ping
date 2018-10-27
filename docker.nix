@@ -3,9 +3,9 @@ let
   app = pkgs.callPackage ./default.nix { pkgs = pkgs; };
 in
 pkgs.dockerTools.buildImage {
-  name = "purescript-nix-bootstrap";
+  name = "aabrook/purescript-ping";
   tag = "latest";
-  contents = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnugrep ];
+  contents = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnugrep pkgs.iputils ];
   config = {
     Cmd = [ "${app}/bin/purescript-nix-bootstrap" ];
     WorkingDir = "${app}";
