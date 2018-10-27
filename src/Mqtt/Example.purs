@@ -15,7 +15,7 @@ import Mqtt
 
 eg opts = launchAff_ $ do
     cli <- connect host options
-    _ <- publish "test" "Why hello there" cli
+    _ <- publish "test" "{\"test\": \"Hi there\"}" cli
     end cli
   where
     host = opts.host
