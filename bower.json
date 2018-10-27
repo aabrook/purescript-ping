@@ -15,7 +15,8 @@
     "purescript-effect": "^2.0.0",
     "purescript-node-child-process": "^5.0.0",
     "purescript-node-streams": "^4.0.0",
-    "purescript-affjax": "^7.0.0"
+    "purescript-affjax": "^7.0.0",
+    "purescript-config2": "justinwoo/purescript-config2#^0.1.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0"
