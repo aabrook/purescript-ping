@@ -1498,7 +1498,60 @@ var PS = {};
           return v(k);
       };
   };
+  var functorContT = function (dictFunctor) {
+      return new Data_Functor.Functor(function (f) {
+          return function (v) {
+              return function (k) {
+                  return v(function (a) {
+                      return k(f(a));
+                  });
+              };
+          };
+      });
+  };
+  var applyContT = function (dictApply) {
+      return new Control_Apply.Apply(function () {
+          return functorContT(dictApply.Functor0());
+      }, function (v) {
+          return function (v1) {
+              return function (k) {
+                  return v(function (g) {
+                      return v1(function (a) {
+                          return k(g(a));
+                      });
+                  });
+              };
+          };
+      });
+  };
+  var bindContT = function (dictBind) {
+      return new Control_Bind.Bind(function () {
+          return applyContT(dictBind.Apply0());
+      }, function (v) {
+          return function (k) {
+              return function (k$prime) {
+                  return v(function (a) {
+                      var v1 = k(a);
+                      return v1(k$prime);
+                  });
+              };
+          };
+      });
+  };
+  var applicativeContT = function (dictApplicative) {
+      return new Control_Applicative.Applicative(function () {
+          return applyContT(dictApplicative.Apply0());
+      }, function (a) {
+          return function (k) {
+              return k(a);
+          };
+      });
+  };
   exports["runContT"] = runContT;
+  exports["functorContT"] = functorContT;
+  exports["applyContT"] = applyContT;
+  exports["applicativeContT"] = applicativeContT;
+  exports["bindContT"] = bindContT;
 })(PS["Control.Monad.Cont.Trans"] = PS["Control.Monad.Cont.Trans"] || {});
 (function(exports) {
     "use strict";
@@ -4409,16 +4462,8 @@ function cancelNoop(client) {
           };
       };
   };
-  var ping = function (host) {
-      return function (source) {
-          return function (f) {
-              return Control_Monad_Cont_Trans.runContT(contPing(host)(source))(f);
-          };
-      };
-  };
   exports["resultToReply"] = resultToReply;
   exports["contPing"] = contPing;
-  exports["ping"] = ping;
   exports["showPing"] = showPing;
 })(PS["Ping"] = PS["Ping"] || {});
 (function(exports) {
@@ -4427,10 +4472,13 @@ function cancelNoop(client) {
   var Affjax = PS["Affjax"];
   var Affjax_RequestBody = PS["Affjax.RequestBody"];
   var Affjax_ResponseFormat = PS["Affjax.ResponseFormat"];
+  var Control_Applicative = PS["Control.Applicative"];
   var Control_Applicative_Free = PS["Control.Applicative.Free"];
   var Control_Apply = PS["Control.Apply"];
   var Control_Bind = PS["Control.Bind"];
+  var Control_Category = PS["Control.Category"];
   var Control_Monad_Cont = PS["Control.Monad.Cont"];
+  var Control_Monad_Cont_Trans = PS["Control.Monad.Cont.Trans"];
   var Control_Semigroupoid = PS["Control.Semigroupoid"];
   var Data_Config = PS["Data.Config"];
   var Data_Config_Node = PS["Data.Config.Node"];
@@ -4463,6 +4511,14 @@ function cancelNoop(client) {
           };
       };
   };
+  var publishPing$prime = function (config) {
+      return function (result) {
+          return function __do() {
+              var v = publishPing("ping")(config.host)(config)(result)();
+              return result;
+          };
+      };
+  };
   var mqttConfig = Control_Apply.apply(Control_Applicative_Free.applyFreeAp)(Control_Apply.apply(Control_Applicative_Free.applyFreeAp)(Control_Apply.apply(Control_Applicative_Free.applyFreeAp)(Data_Functor.map(Control_Applicative_Free.functorFreeAp)(function (v) {
       return function (v1) {
           return function (v2) {
@@ -4486,17 +4542,30 @@ function cancelNoop(client) {
   })))(Data_Config.string({
       name: "password"
   }));
+  var capturing = function (config) {
+      var toString = function ($15) {
+          return Control_Applicative.pure(Control_Monad_Cont_Trans.applicativeContT(Effect.applicativeEffect))(Data_Functor.map(Data_Maybe.functorMaybe)(Data_Show.show(Ping.showPing))($15));
+      };
+      var resolve = function ($16) {
+          return Control_Applicative.pure(Control_Monad_Cont_Trans.applicativeContT(Effect.applicativeEffect))(Data_Maybe.maybe(Control_Applicative.pure(Effect.applicativeEffect)("Failed to ping"))(Control_Category.identity(Control_Category.categoryFn))($16));
+      };
+      var publishIt = function ($17) {
+          return Control_Applicative.pure(Control_Monad_Cont_Trans.applicativeContT(Effect.applicativeEffect))(Data_Functor.map(Data_Maybe.functorMaybe)(publishPing$prime(config))($17));
+      };
+      var pingGoogle = Ping.contPing("google.com")("purescript");
+      return Control_Bind.bind(Control_Monad_Cont_Trans.bindContT(Effect.bindEffect))(Control_Bind.bind(Control_Monad_Cont_Trans.bindContT(Effect.bindEffect))(Control_Bind.bind(Control_Monad_Cont_Trans.bindContT(Effect.bindEffect))(pingGoogle)(toString))(publishIt))(resolve);
+  };
   var main = (function () {
       var run = function (v) {
           if (v instanceof Data_Either.Right) {
-              return Ping.ping("google.com")("purescript")(Data_Maybe.maybe(Effect_Class_Console.log(Effect_Class.monadEffectEffect)("Failed to publish"))(function ($14) {
-                  return publishPing("ping")(v.value0.host)(v.value0)(Data_Show.show(Ping.showPing)($14));
-              }));
+              return Control_Monad_Cont_Trans.runContT(capturing(v.value0))(function (v1) {
+                  return Control_Bind.bind(Effect.bindEffect)(v1)(Effect_Class_Console.log(Effect_Class.monadEffectEffect));
+              });
           };
           if (v instanceof Data_Either.Left) {
-              return Effect_Class_Console.log(Effect_Class.monadEffectEffect)(Data_Show.show(Data_Set.showSet(Data_Show.showString))(v.value0));
+              return Effect_Class_Console.log(Effect_Class.monadEffectEffect)("Failed to load config: " + Data_Show.show(Data_Set.showSet(Data_Show.showString))(v.value0));
           };
-          throw new Error("Failed pattern match at Main line 36, column 5 - line 36, column 124: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Main line 36, column 5 - line 36, column 61: " + [ v.constructor.name ]);
       };
       return function __do() {
           var v = Data_Config_Node.fromEnv(Effect_Class.monadEffectEffect)("MQTT")(mqttConfig)();
@@ -4505,6 +4574,8 @@ function cancelNoop(client) {
   })();
   exports["mqttConfig"] = mqttConfig;
   exports["main"] = main;
+  exports["capturing"] = capturing;
+  exports["publishPing'"] = publishPing$prime;
   exports["publishPing"] = publishPing;
 })(PS["Main"] = PS["Main"] || {});
 PS["Main"].main();

@@ -17,7 +17,7 @@ import Data.Config (Config, int, optional, prefix, string) as C
 import Data.Config.Node (fromEnv) as C
 
 import Ping (PingReply(..), contPing, ping, resultToReply)
-import Control.Monad.Cont (ContT(..), runContT)
+import Control.Monad.Cont (ContT(..), cont, runContT)
 import Mqtt
 
 mqttConfig :: C.Config {name :: String} Options
@@ -33,9 +33,22 @@ main = do
     config <- C.fromEnv "MQTT" mqttConfig
     run config
   where
-    run (Right r) = ping "google.com" "purescript" (maybe (log "Failed to publish") (publishPing "ping" r.host r <<< show))
-    run (Left err) = log $ show err
+    run (Right r) = runContT (capturing r) (\v -> v >>= log)
+    run (Left err) = log $ "Failed to load config: " <> (show err)
 
+capturing :: Options -> ContT Unit Effect (Effect String)
+capturing config = pingGoogle >>= toString >>= publishIt >>= resolve
+  where
+    pingGoogle = (contPing "google.com" "purescript")
+    toString = pure <<< map show
+    publishIt = pure <<< map (publishPing' config)
+    resolve = pure <<< maybe (pure "Failed to ping") (identity)
+
+publishPing' config result = do
+  _ <- publishPing "ping" config.host config result
+  pure result
+
+publishPing :: String -> String -> Options -> String -> Effect Unit
 publishPing topic host opts ping = launchAff_ $ do
   cli <- connect host opts
   _ <- publish topic ping cli
