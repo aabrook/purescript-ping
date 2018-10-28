@@ -1,4 +1,4 @@
-module Main where
+module MainSpeedtest where
 
 import Prelude
 
@@ -16,9 +16,9 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Config (Config, int, optional, prefix, string) as C
 import Data.Config.Node (fromEnv) as C
 
-import Ping (PingReply(..), contPing, ping, resultToReply)
 import Control.Monad.Cont (ContT(..), runContT)
 import Mqtt
+import Speedtest
 
 mqttConfig :: C.Config {name :: String} Options
 mqttConfig =
@@ -31,13 +31,14 @@ mqttConfig =
 main :: Effect Unit
 main = do
     config <- C.fromEnv "MQTT" mqttConfig
-    run config
+    runSpeedtest config
   where
-    run (Right r) = ping "google.com" "purescript" (maybe (log "Failed to publish") (publishPing "ping" r.host r <<< show))
-    run (Left err) = log $ show err
+    runSpeedtest (Right r) = runContT contSpeedtest (publishSpeedtest "speedtest" r.host r <<< show)
+    runSpeedtest (Left err) = log $ show err
 
-publishPing topic host opts ping = launchAff_ $ do
+publishSpeedtest topic host opts ping = launchAff_ $ do
   cli <- connect host opts
   _ <- publish topic ping cli
   _ <- log $ topic <> " Published"
   end cli
+

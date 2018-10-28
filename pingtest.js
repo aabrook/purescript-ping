@@ -4438,26 +4438,28 @@ function cancelNoop(client) {
   var Data_Function = PS["Data.Function"];
   var Data_Functor = PS["Data.Functor"];
   var Data_Maybe = PS["Data.Maybe"];
+  var Data_Semigroup = PS["Data.Semigroup"];
   var Data_Set = PS["Data.Set"];
   var Data_Show = PS["Data.Show"];
   var Effect = PS["Effect"];
   var Effect_Aff = PS["Effect.Aff"];
   var Effect_Class = PS["Effect.Class"];
   var Effect_Class_Console = PS["Effect.Class.Console"];
-  var Example = PS["Example"];
   var Mqtt = PS["Mqtt"];
   var Ping = PS["Ping"];
   var Prelude = PS["Prelude"];                 
-  var publishPing = function (host) {
-      return function (opts) {
-          return function (ping) {
-              return Effect_Aff.launchAff_(Control_Bind.bind(Effect_Aff.bindAff)(Mqtt.connect(host)(opts))(function (v) {
-                  return Control_Bind.bind(Effect_Aff.bindAff)(Mqtt.publish("ping")(ping)(v))(function (v1) {
-                      return Control_Bind.bind(Effect_Aff.bindAff)(Effect_Class_Console.log(Effect_Aff.monadEffectAff)("Ping Published"))(function (v2) {
-                          return Mqtt.end(v);
+  var publishPing = function (topic) {
+      return function (host) {
+          return function (opts) {
+              return function (ping) {
+                  return Effect_Aff.launchAff_(Control_Bind.bind(Effect_Aff.bindAff)(Mqtt.connect(host)(opts))(function (v) {
+                      return Control_Bind.bind(Effect_Aff.bindAff)(Mqtt.publish(topic)(ping)(v))(function (v1) {
+                          return Control_Bind.bind(Effect_Aff.bindAff)(Effect_Class_Console.log(Effect_Aff.monadEffectAff)(topic + " Published"))(function (v2) {
+                              return Mqtt.end(v);
+                          });
                       });
-                  });
-              }));
+                  }));
+              };
           };
       };
   };
@@ -4488,13 +4490,13 @@ function cancelNoop(client) {
       var run = function (v) {
           if (v instanceof Data_Either.Right) {
               return Ping.ping("google.com")("purescript")(Data_Maybe.maybe(Effect_Class_Console.log(Effect_Class.monadEffectEffect)("Failed to publish"))(function ($14) {
-                  return publishPing(v.value0.host)(v.value0)(Data_Show.show(Ping.showPing)($14));
+                  return publishPing("ping")(v.value0.host)(v.value0)(Data_Show.show(Ping.showPing)($14));
               }));
           };
           if (v instanceof Data_Either.Left) {
               return Effect_Class_Console.log(Effect_Class.monadEffectEffect)(Data_Show.show(Data_Set.showSet(Data_Show.showString))(v.value0));
           };
-          throw new Error("Failed pattern match at Main line 37, column 5 - line 37, column 117: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Main line 36, column 5 - line 36, column 124: " + [ v.constructor.name ]);
       };
       return function __do() {
           var v = Data_Config_Node.fromEnv(Effect_Class.monadEffectEffect)("MQTT")(mqttConfig)();
